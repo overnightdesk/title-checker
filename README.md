@@ -4,7 +4,11 @@ Overnight Desk tool. Count an Amazon title, including spaces. 75 is the cap. If 
 
 We never log into seller accounts. No ranking promises.
 
-## Run
+Public site: https://overnightdesk.github.io/title-checker/
+
+GitHub Pages serves `docs/`. Paste the title, or load SAMPLE. A static page cannot fetch Amazon HTML.
+
+## Run locally (Flask)
 
 From this directory:
 
@@ -18,13 +22,15 @@ The server binds `0.0.0.0:8787`. Open http://127.0.0.1:8787
 
 If the venv already exists, skip the first two lines.
 
+Local Flask can attempt an Amazon HTML fetch for a URL or ASIN. Amazon often blocks it. If fetch fails, paste the title. Count and rewrite still work.
+
 ## Use
 
-Paste an Amazon URL, an ASIN, or the title itself. Check.
+**Pages:** paste the title itself, or Load SAMPLE. URL/ASIN paste will not load Amazon.
 
-Amazon often blocks HTML fetch from a server. If fetch fails, paste the title. Count and rewrite still work.
+**Flask:** paste an Amazon URL, an ASIN, or the title itself. Check.
 
-First check is free. After one rewrite, the page shows a Fiverr order link.
+First rewrite is free. After one rewrite, the page shows a Fiverr order link.
 
 - $100 — one listing
 - $150 — 5 Amazon ASINs
@@ -45,13 +51,23 @@ Soy is on the live listing; leftover Item Highlights use only words from the sou
 
 ## Proof
 
+Python (Flask rewriter):
+
 ```bash
 .venv/bin/python proof.py
 ```
 
 Writes `PROOF.md`. SAMPLE count must be 168. Rewrite must be ≤75.
 
-## API
+Browser rewriter (`docs/rewrite.js`):
+
+```bash
+node -e "console.log(JSON.stringify(require('./docs/rewrite.js').proofSample(), null, 2))"
+```
+
+`proofSample().passed` must be true.
+
+## API (local Flask only)
 
 `POST /api/check` JSON `{ "q": "...", "title": "...", "sample": true }`
 `GET /api/health`
