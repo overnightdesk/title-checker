@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overnight Desk — Amazon 75-character title checker</title>
+  <meta name="description" content="Count an Amazon title. Spaces included. 75 is the cap. One rewrite is free.">
+  <link rel="icon" href="/static/overnight-desk-avatar.png">
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --fg: #e8e4dc;
+      --muted: #8f8a80;
+      --line: #2c2c2c;
+      --over: #c45c4a;
+      --under: #8aa37a;
+      --exact: #c4b48a;
+      --chip: #242424;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.45 "Georgia", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    }
+    body { min-height: 100vh; }
+    .wrap {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 2.25rem 1.25rem 5rem;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 2.25rem;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 1.25rem;
+    }
+    header img {
+      width: 52px;
+      height: 52px;
+      display: block;
+      border-radius: 50%;
+    }
+    header .brand {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+    header .sub {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-top: 0.15rem;
+      letter-spacing: 0;
+      text-transform: none;
+      font-family: Georgia, serif;
+      font-weight: 400;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 400;
+      margin: 0 0 0.5rem;
+    }
+    .lede {
+      color: var(--muted);
+      margin: 0 0 1.5rem;
+    }
+    label {
+      display: block;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 7.2rem;
+      resize: vertical;
+      background: #141414;
+      color: var(--fg);
+      border: 1px solid var(--line);
+      padding: 0.85rem 0.9rem;
+      font: 15px/1.4 "IBM Plex Mono", "ui-monospace", "SFMono-Regular", Menlo, Consolas, monospace;
+      border-radius: 2px;
+    }
+    textarea:focus {
+      outline: 1px solid #5a564c;
+      border-color: #5a564c;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+      align-items: center;
+    }
+    button, .btn {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--fg);
+      color: var(--bg);
+      border: 0;
+      padding: 0.7rem 1.05rem;
+      cursor: pointer;
+      border-radius: 1px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    button.ghost, a.ghost {
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--line);
+    }
+    button:hover, .btn:hover { filter: brightness(1.05); }
+    button:disabled { opacity: 0.5; cursor: wait; }
+    .live {
+      margin-left: auto;
+      font-family: "IBM Plex Mono", Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .live.over { color: var(--over); }
+    .live.under { color: var(--under); }
+    .live.exact { color: var(--exact); }
+
+    #result { margin-top: 2.4rem; }
+    .count {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-weight: 700;
+      font-size: clamp(4.2rem, 16vw, 7.5rem);
+      line-height: 0.85;
+      letter-spacing: -0.04em;
+      margin: 0;
+    }
+    .count.over { color: var(--over); }
+    .count.under { color: var(--under); }
+    .count.exact { color: var(--exact); }
+    .delta {
+      margin: 0.55rem 0 1.4rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+    .block {
+      border-top: 1px solid var(--line);
+      padding: 1.1rem 0 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .kicker {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .title-out, .rewrite-out, .hl-out {
+      font-family: "IBM Plex Mono", Menlo, Consolas, monospace;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .rewrite-out { font-size: 1.05rem; }
+    .mark {
+      display: inline-block;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border: 1px solid var(--fg);
+      padding: 0.15rem 0.4rem;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+    .err {
+      color: var(--over);
+      margin-top: 0.9rem;
+    }
+    .pay {
+      margin-top: 2rem;
+      padding-top: 1.4rem;
+      border-top: 1px solid var(--line);
+    }
+    .pay h2 {
+      font-size: 1.15rem;
+      font-weight: 400;
+      margin: 0 0 0.75rem;
+    }
+    .prices {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 1rem;
+    }
+    .prices li {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid var(--line);
+      padding: 0.45rem 0;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 0.92rem;
+    }
+    .prices .amt {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+    }
+    .fine {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin: 0 0 1rem;
+    }
+    footer {
+      margin-top: 3.5rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--line);
+      padding-top: 1rem;
+    }
+    .hidden { display: none; }
+    a { color: var(--fg); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/static/overnight-desk-avatar.png" width="52" height="52" alt="Overnight Desk">
+      <div>
+        <div class="brand">Overnight Desk</div>
+        <div class="sub">Amazon 75-character title checker</div>
+      </div>
+    </header>
+
+    <h1>Paste a URL, an ASIN, or the title.</h1>
+    <p class="lede">75 is the cap. Spaces count. First check is free.</p>
+
+    <label for="q">Amazon URL, ASIN, or title</label>
+    <textarea id="q" spellcheck="false" placeholder="https://www.amazon.com/dp/B0FH54F1XB
+or B0FH54F1XB
+or the title itself"></textarea>
+    <div class="row">
+      <button type="button" id="check">Check</button>
+      <button type="button" class="ghost" id="sample">Load SAMPLE</button>
+      <span class="live" id="live"></span>
+    </div>
+    <p class="err hidden" id="form-err"></p>
+
+    <div id="result" class="hidden"></div>
+    <footer>
+      Overnight Desk. Copy only. You paste it. We do not log into Seller Central or Etsy.
+    </footer>
+  </div>
+
+  <script>
+    const LIMIT = {{ title_limit }};
+    const SAMPLE_ASIN = {{ sample_asin | tojson }};
+    const SAMPLE_TITLE = {{ sample_title | tojson }};
+    const FIVERR = {{ fiverr_url | tojson }};
+    const q = document.getElementById("q");
+    const live = document.getElementById("live");
+    const result = document.getElementById("result");
+    const formErr = document.getElementById("form-err");
+    const checkBtn = document.getElementById("check");
+
+    function looksLikeAsinOrUrl(s) {
+      const t = s.trim();
+      if (!t) return false;
+      if (/^B0[A-Z0-9]{8}$/i.test(t)) return true;
+      if (/amazon\./i.test(t) && /\/(?:dp|gp\/product)\//i.test(t)) return true;
+      if (/^https?:\/\//i.test(t) || /^www\./i.test(t)) return true;
+      return false;
+    }
+
+    function liveCount() {
+      const t = q.value;
+      if (!t.trim() || looksLikeAsinOrUrl(t)) {
+        live.textContent = "";
+        live.className = "live";
+        return;
+      }
+      const n = t.length;
+      const d = n - LIMIT;
+      live.className = "live " + (d > 0 ? "over" : d < 0 ? "under" : "exact");
+      live.textContent = d > 0 ? n + " · " + d + " over" : d < 0 ? n + " · " + (-d) + " under" : n + " · exact";
+    }
+
+    q.addEventListener("input", liveCount);
+
+    document.getElementById("sample").addEventListener("click", () => {
+      q.value = SAMPLE_TITLE;
+      liveCount();
+      run({ sample: true, title: SAMPLE_TITLE, q: SAMPLE_ASIN });
+    });
+
+    checkBtn.addEventListener("click", () => run());
+    q.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
+    });
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    function deltaLine(d, status) {
+      if (status === "over") return d + " over the cap.";
+      if (status === "under") return (-d) + " under the cap.";
+      return "Exact. 75 on the nose.";
+    }
+
+    function paywallHtml() {
+      return `
+        <div class="pay">
+          <h2>One rewrite is free. More listings:</h2>
+          <ul class="prices">
+            <li><span>One listing</span><span class="amt">$100</span></li>
+            <li><span>5 Amazon ASINs</span><span class="amt">$150</span></li>
+            <li><span>10 Etsy listings</span><span class="amt">$200</span></li>
+          </ul>
+          <p class="fine">You paste. We never log into seller accounts. No ranking promises.</p>
+          <a class="btn" href="${esc(FIVERR)}" target="_blank" rel="noopener noreferrer">Order on Fiverr</a>
+        </div>`;
+    }
+
+    async function run(payload) {
+      formErr.classList.add("hidden");
+      const body = payload || { q: q.value };
+      checkBtn.disabled = true;
+      try {
+        const res = await fetch("/api/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        render(data);
+      } catch (err) {
+        formErr.textContent = "Could not reach the checker. Is the server up?";
+        formErr.classList.remove("hidden");
+      } finally {
+        checkBtn.disabled = false;
+      }
+    }
+
+    function render(data) {
+      if (!data.ok) {
+        formErr.textContent = data.error || "Paste the title.";
+        formErr.classList.remove("hidden");
+        result.classList.add("hidden");
+        return;
+      }
+      formErr.classList.add("hidden");
+      const sampleMark = data.sample ? '<span class="mark">SAMPLE</span>' : "";
+      const src = data.source === "fetch" ? "Live title"
+                : data.source === "sample" ? "SAMPLE title"
+                : "Pasted title";
+      let html = `
+        <p class="count ${esc(data.status)}">${data.count}</p>
+        <p class="delta">${deltaLine(data.delta, data.status)}${sampleMark}</p>
+        <div class="block">
+          <div class="kicker"><span>${src}</span><span>${data.count}/${data.limit}</span></div>
+          <div class="title-out">${esc(data.title)}</div>
+        </div>`;
+      if (data.rewrite) {
+        html += `
+        <div class="block">
+          <div class="kicker"><span>Brand-first rewrite</span><span>${data.rewrite_count}/${data.limit}</span></div>
+          <div class="rewrite-out">${esc(data.rewrite)}</div>
+        </div>`;
+        if (data.highlights) {
+          html += `
+        <div class="block">
+          <div class="kicker"><span>Leftover for Item Highlights</span><span>${data.highlights_count}/${data.highlight_limit}</span></div>
+          <div class="hl-out">${esc(data.highlights)}</div>
+        </div>`;
+        }
+      } else if (data.status === "under" || data.status === "exact") {
+        html += `<div class="block"><p class="fine">Already inside 75. No rewrite.</p></div>`;
+      }
+      if (data.sample) {
+        html += `<p class="fine">SAMPLE. Public listing ${esc(data.asin || "")}. Not applied to any seller account. Soy is on the live listing; leftover highlights use only words from the source title.</p>`;
+      }
+      if (data.paywall) html += paywallHtml();
+      result.innerHTML = html;
+      result.classList.remove("hidden");
+      result.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    liveCount();
+  </script>
+</body>
+</html>
